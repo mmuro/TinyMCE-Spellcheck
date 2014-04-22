@@ -18,7 +18,7 @@ function TSpell_http_post( $request, $host, $path, $port = 80 ) {
 		'httpversion'          => '1.0',
 		'timeout'              => apply_filters( 'atd_http_post_timeout', 15 ),
 	);
-	$TSpell_url = "http://{$host}{$path}";
+	$TSpell_url = "http://{$host}:{$port}{$path}";
 	$response = wp_remote_post( $TSpell_url, $http_args );
 	$code = (int) wp_remote_retrieve_response_code( $response );
 
