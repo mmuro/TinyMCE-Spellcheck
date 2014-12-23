@@ -1,10 +1,10 @@
 <?php
 /*
 Plugin Name: TinyMCE Spellcheck
-Description: Adds a contextual spell, style, and grammar checker to WordPress. This is a fork of the After the Deadline plugin.
+Description: Adds a contextual spell, style, and grammar checker to WordPress 3.6+
 Author: Matthew Muro
 Author URI: http://matthewmuro.com
-Version: 0.1
+Version: 1.3
 */
 
 /*
@@ -24,7 +24,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 
 function TSpell_configuration_load() {
-	wp_safe_redirect( admin_url( 'profile.php#atd' ) );
+	wp_safe_redirect( get_edit_profile_url( get_current_user_id() ) . '#atd' );
 	exit;
 }
 
@@ -35,7 +35,7 @@ include( 'includes/config-options.php' );
 include( 'includes/config-unignore.php' );
 include( 'includes/proxy.php' );
 
-define('TSPELL_VERSION', '20130807');
+define('TSPELL_VERSION', '20140801');
 
 /**
  * Update a user's After the Deadline Setting
@@ -67,6 +67,10 @@ function TSpell_addbuttons() {
 	if ( ! TSpell_is_allowed() )
 		return;
 
+	if ( ! defined( 'TSPELL_TINYMCE_4' ) ) {
+		define( 'TSPELL_TINYMCE_4', ( ! empty( $GLOBALS['tinymce_version'] ) && substr( $GLOBALS['tinymce_version'], 0, 1 ) >= 4 ) );
+	}
+
 	/* Add only in Rich Editor mode */
 	if ( get_user_option( 'rich_editing' ) == 'true' ) {
 		add_filter( 'mce_external_plugins', 'add_TSpell_tinymce_plugin' );
@@ -82,6 +86,14 @@ function TSpell_addbuttons() {
  * Hook into the TinyMCE buttons and replace the current spellchecker
  */
 function register_TSpell_button( $buttons ) {
+	if ( TSPELL_TINYMCE_4 ) {
+		// Use the default icon in TinyMCE 4.0 (replaced by dashicons in editor.css)
+		if ( ! in_array( 'spellchecker', $buttons, true ) ) {
+			$buttons[] = 'spellchecker';
+		}
+
+		return $buttons;
+	}
 
 	/* kill the spellchecker.. don't need no steenkin PHP spell checker */
 	foreach ( $buttons as $key => $button ) {
@@ -100,7 +112,9 @@ function register_TSpell_button( $buttons ) {
  * Load the TinyMCE plugin : editor_plugin.js (wp2.5)
  */
 function add_TSpell_tinymce_plugin( $plugin_array ) {
-	$plugin_array['AtD'] = plugins_url( '/tinymce/editor_plugin.js?v=' . TSPELL_VERSION, __FILE__ );
+	$plugin = TSPELL_TINYMCE_4 ? 'plugin' : 'editor_plugin';
+
+	$plugin_array['AtD'] = plugins_url( '/tinymce/' . $plugin . '.js?v=' . TSPELL_VERSION, __FILE__ );
 	return $plugin_array;
 }
 
@@ -113,8 +127,8 @@ function TSpell_change_mce_settings( $init_array ) {
 
 	$user = wp_get_current_user();
 
-	$init_array['atd_rpc_url']        = admin_url( 'admin-ajax.php?action=proxy_atd&url=' );
-	$init_array['atd_ignore_rpc_url'] = admin_url( 'admin-ajax.php?action=atd_ignore&phrase=' );
+	$init_array['atd_rpc_url']        = admin_url( 'admin-ajax.php?action=proxy_atd&_wpnonce=' . wp_create_nonce( 'proxy_atd' ) . '&url=' );
+	$init_array['atd_ignore_rpc_url'] = admin_url( 'admin-ajax.php?action=atd_ignore&_wpnonce=' . wp_create_nonce( 'tspell_ignore' ) . '&phrase=' );
 	$init_array['atd_rpc_id']         = 'WPORG-' . md5(get_bloginfo('wpurl'));
 	$init_array['atd_theme']          = 'wordpress';
 	$init_array['atd_ignore_enable']  = 'true';
@@ -142,7 +156,7 @@ function TSpell_settings() {
     header( 'Content-Type: text/javascript' );
 
 	/* set the RPC URL for AtD */
-	echo "AtD.rpc = " . json_encode( esc_url_raw( admin_url( 'admin-ajax.php?action=proxy_atd&url=' ) ) ) . ";\n";
+	echo "AtD.rpc = " . json_encode( esc_url_raw( admin_url( 'admin-ajax.php?action=proxy_atd&_wpnonce=' . wp_create_nonce( 'proxy_atd' ) . '&url=' ) ) ) . ";\n";
 
 	/* set the API key for AtD */
 	echo "AtD.api_key = " . json_encode( 'WPORG-' . md5( get_bloginfo( 'wpurl' ) ) ) . ";\n";
@@ -153,8 +167,9 @@ function TSpell_settings() {
     /* honor the types we want to show */
     echo "AtD.showTypes(" . json_encode( TSpell_get_setting( $user->ID, 'TSpell_options' ) ) .");\n";
 
-    /* this is not an AtD/jQuery setting but I'm putting it in AtD to make it easy for the non-viz plugin to find it */
-	echo "AtD.rpc_ignore = " . json_encode( esc_url_raw( admin_url( 'admin-ajax.php?action=atd_ignore&phrase=' ) ) ) . ";\n";
+	/* this is not an AtD/jQuery setting but I'm putting it in AtD to make it easy for the non-viz plugin to find it */
+	$admin_ajax_url = admin_url( 'admin-ajax.php?action=atd_ignore&_wpnonce=' . wp_create_nonce( 'atd_ignore' ) . '&phrase=' );
+	echo "AtD.rpc_ignore = " . json_encode( esc_url_raw( $admin_ajax_url ) ) . ";\n";
 
     die;
 }
@@ -219,6 +234,8 @@ function TSpell_should_load_on_page() {
 
 	$pages = array( 'post.php', 'post-new.php', 'page.php', 'page-new.php', 'admin.php', 'profile.php' );
 
+	$pages = apply_filters( 'tinymce_spellcheck_load_on_pages', $pages );
+	
 	if ( in_array( $pagenow, $pages ) ) {
 		if ( isset( $current_screen->post_type ) && $current_screen->post_type ) {
 			return post_type_supports( $current_screen->post_type, 'editor' );
@@ -254,3 +271,9 @@ add_action( 'wp_ajax_atd_settings', 'TSpell_settings' );
 
 /* load and install the localization stuff */
 include( 'includes/atd-l10n.php' );
+
+// Load i18n
+add_action( 'plugins_loaded', 'TSpell_languages' );
+function TSpell_languages() {
+	load_plugin_textdomain( 'tinymce-spellcheck', false , dirname( plugin_basename( __FILE__ ) ) . '/languages/' );
+}
