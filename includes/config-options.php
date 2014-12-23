@@ -34,7 +34,7 @@ function TSpell_process_options_update() {
  */
 function TSpell_display_options_form() {
 
-	/* grab our user and validate their existence */
+	// grab our user and validate their existence
 	$user = wp_get_current_user();
 	if ( ! $user || $user->ID == 0 )
 		return;
@@ -118,7 +118,7 @@ function TSpell_get_options( $user_id, $name ) {
  *  Saves set of user options specified by $name from POST data
  */
 function TSpell_update_options( $user_id, $name ) {
-	/* We should probably run $_POST[name] through an esc_*() function... */
+	// We should probably run $_POST[name] through an esc_*() function...
 	if ( isset( $_POST[$name] ) && is_array( $_POST[$name] ) ) {
 		$copy = array_map( 'strip_tags', array_keys( $_POST[$name] ) );
 		TSpell_update_setting( $user_id, TSpell_sanitize( $name ), implode( ',', $copy )  );

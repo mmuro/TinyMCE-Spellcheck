@@ -12,6 +12,8 @@ function TSpell_ignore_call() {
 	if ( ! $user || $user->ID == 0 )
 		return;
 
+	check_admin_referer( 'tspell_ignore' );
+
 	$ignores = explode( ',', TSpell_get_setting( $user->ID, 'TSpell_ignored_phrases') );
 	array_push( $ignores, $_GET['phrase'] );
 
@@ -32,10 +34,13 @@ function TSpell_process_unignore_update() {
 	if ( ! TSpell_is_allowed() )
 		return;
 
-        $user = wp_get_current_user();
+	if ( ! isset( $_POST['TSpell_ignored_phrases'] ) )
+		return;
 
-        if ( ! $user || $user->ID == 0 )
-                return;
+    $user = wp_get_current_user();
+
+    if ( ! $user || $user->ID == 0 )
+            return;
 
 	$ignores = array_filter( array_map( 'strip_tags', explode( ',', $_POST['TSpell_ignored_phrases'] ) ) );
         TSpell_update_setting( $user->ID, 'TSpell_ignored_phrases', join( ',', $ignores ) );
@@ -78,32 +83,32 @@ function atd_show_phrases( ignored )
 }
 
 function atd_unignore( phrase ) {
-	/* get the ignored values and remove the unwanted phrase */
+	// get the ignored values and remove the unwanted phrase
 	var ignored = jQuery( '#TSpell_ignored_phrases' ).val().split( /,/g );
         ignored = jQuery.map(ignored, function(value, index) { return value == phrase ? null : value; });
         jQuery( '#TSpell_ignored_phrases' ).val( ignored.join(',') );
 
-	/* update the UI */
+	// update the UI
 	atd_show_phrases( ignored );
 
-	/* show a nifty message to the user */
-        jQuery( '#TSpell_message' ).show();
+	// show a nifty message to the user
+    jQuery( '#TSpell_message' ).show();
 }
 
 function atd_ignore () {
-	/* get the ignored values and update the hidden field */
+	// get the ignored values and update the hidden field
 	var ignored = jQuery( '#TSpell_ignored_phrases' ).val().split( /,/g );
 
-        jQuery.map(jQuery( '#TSpell_add_ignore' ).val().split(/,\s*/g), function(value, index) { ignored.push(value); });
+    jQuery.map(jQuery( '#TSpell_add_ignore' ).val().split(/,\s*/g), function(value, index) { ignored.push(value); });
 
-        jQuery( '#TSpell_ignored_phrases' ).val( ignored.join(',') );
+    jQuery( '#TSpell_ignored_phrases' ).val( ignored.join(',') );
 
-	/* update the UI */
+	// update the UI
 	atd_show_phrases( ignored );
 	jQuery( '#TSpell_add_ignore' ).val('');
 
-	/* show that nifteroo messaroo to the useroo */
-        jQuery( '#TSpell_message' ).show();
+	// show that nifteroo messaroo to the useroo
+    jQuery( '#TSpell_message' ).show();
 }
 
 function atd_ignore_init() {
@@ -115,7 +120,7 @@ function atd_ignore_init() {
 	atd_show_phrases( jQuery( '#TSpell_ignored_phrases' ).val().split( /,/g ) );
 }
 
-/* document.ready() does not execute in IE6 unless it's at the bottom of the page. oi! */
+// document.ready() does not execute in IE6 unless it's at the bottom of the page. oi!
 if (navigator.appName == 'Microsoft Internet Explorer')
 	setTimeout( atd_ignore_init, 2500 );
 else

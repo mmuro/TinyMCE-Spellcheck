@@ -7,7 +7,7 @@ function TSpell_init_l10n_js() {
 		return;
 	}
 
-	/* load localized strings for AtD */
+	// load localized strings for AtD
 	wp_localize_script( 'TSpell_settings', 'TSpell_l10n_r0ar', array (
 		'menu_title_spelling'         => __( 'Spelling', 'tinymce-spellcheck' ),
 		'menu_title_repeated_word'    => __( 'Repeated Word', 'tinymce-spellcheck' ),
@@ -34,7 +34,7 @@ function TSpell_init_l10n_js() {
 		'dialog_confirm_post_update'  => __( "The proofreader has suggestions for this post. Are you sure you want to update it?\n\nPress OK to update your post, or Cancel to view the suggestions and edit your post.", 'tinymce-spellcheck' ),
 	) );
 
-	wp_enqueue_script( 'TSpell_l10n', plugins_url( 'install_atd_l10n.js', __FILE__ ), array( 'TSpell_settings', 'jquery' ), TSPELL_VERSION );
+	wp_enqueue_script( 'TSpell_l10n', plugins_url( '/js/install_atd_l10n.js', dirname( __FILE__ ) ), array( 'TSpell_settings', 'jquery' ), TSPELL_VERSION );
 }
 
 add_action( 'admin_print_scripts', 'TSpell_init_l10n_js' );
