@@ -232,8 +232,10 @@ function TSpell_load_css() {
 function TSpell_should_load_on_page() {
 	global $pagenow, $current_screen;
 
-	$pages = array( 'post.php', 'post-new.php', 'page.php', 'page-new.php', 'admin.php', 'profile.php', 'edit.php' );
+	$pages = array( 'post.php', 'post-new.php', 'page.php', 'page-new.php', 'admin.php', 'profile.php' );
 
+	$pages = apply_filters( 'tinymce_spellcheck_load_on_pages', $pages );
+	
 	if ( in_array( $pagenow, $pages ) ) {
 		if ( isset( $current_screen->post_type ) && $current_screen->post_type ) {
 			return post_type_supports( $current_screen->post_type, 'editor' );
